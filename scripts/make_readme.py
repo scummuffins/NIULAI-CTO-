@@ -77,7 +77,7 @@ that data unmodified; regenerated PNGs are a lossless container around it, not a
 original file. Dimensions ({', '.join(s['image_dimensions'])}) and all artwork content are intact.
 No better copy exists publicly - the original bytes died with the pin.
 
-## Contract control and royalties (verified on-chain)
+## Why the original contract is not reusable (verified on-chain)
 
 | Role | Address | Changeable? |
 |---|---|---|
@@ -85,31 +85,37 @@ No better copy exists publicly - the original bytes died with the pin.
 | Creator (per marketplace) | `0xaa52322ce0377a0370c8e2f131096189edf87002` | - |
 | Royalty receiver, 10% EIP-2981 | `0x311188bef22479ede7bd29b61a7ae7d84ba6b55c` | **no - immutable** |
 
-* `setBaseURI` (`0x55f804b3`) is `onlyOwner`. Simulated from a non-owner it reverts with `0x118cdaa7`
-  (`OwnableUnauthorizedAccount`); from the owner address it succeeds. **Repairing the original
-  contract requires that private key** - there is no other way in.
-* The 10% royalty is fixed forever. The bytecode contains **no `setDefaultRoyalty`, no
-  `setTokenRoyalty`, no `deleteDefaultRoyalty`** - nobody, owner included, can redirect it. The
-  receiver is a contract (9,591 bytes) rather than a wallet, consistent with the metadata's claim
-  that royalties buy the token and distribute to holders; that behaviour is not verified here.
-* `renounceOwnership` exists. If it is ever called, `setBaseURI` becomes permanently uncallable and
-  the collection can never be restored by anyone.
-* `niulai.sbs` cannot be taken over to fix `tokenURI` from the DNS side: it is registered through
-  2027-08-16 and parked on `dns-parking.com`.
+* **Only the abandoning owner can repair it.** `setBaseURI` (`0x55f804b3`) is `onlyOwner`.
+  Simulated from any other address it reverts with `0x118cdaa7` (`OwnableUnauthorizedAccount`).
+  There is no other way in, so restoring the original contract is not an option.
+* **Whoever holds that key can break it again** at any time, and `renounceOwnership` exists - if it
+  is ever called, `setBaseURI` becomes permanently uncallable and the artwork can never be restored
+  by anyone.
+* **The 10% royalty is immutable.** The bytecode contains **no `setDefaultRoyalty`, no
+  `setTokenRoyalty`, no `deleteDefaultRoyalty`** - nobody, owner included, can redirect it.
+* **The gateway cannot be recovered either.** `niulai.sbs` is registered through 2027-08-16 and
+  parked on `dns-parking.com`, so `tokenURI` cannot be fixed from the DNS side.
 
 ## Relaunching
 
-See **`RELAUNCH.md`** for the full walkthrough. In short:
+A clean contract plus an airdrop to the {holders['unique_holders'] if holders else 'current'} holders is the only viable route.
+`contracts/NiulaiV2.sol` and `airdrop_batches.json` cover it; **`RELAUNCH.md`** is the full
+step-by-step walkthrough.
 
-* **Path A - repair the original contract.** Needs the owner key. Keeps token ids, history, holders
-  and existing listings. The immutable 10% royalty stays exactly where it is.
-* **Path B - deploy fresh on BNB Chain and airdrop the {holders['unique_holders'] if holders else 'current'} holders.** You control metadata
-  *and* royalties and nobody can break it again; costs the original on-chain provenance and needs
-  re-verification on the marketplaces. `contracts/NiulaiV2.sol` plus `airdrop_batches.json` do this.
+The replacement contract fixes what made the original fragile:
 
-Whichever path: use an `ipfs://` base URI, never a gateway domain. The original collection died
-because `tokenURI` pointed at `https://niulai.sbs/...` - a single centralised host - so one expired
-pin plus one parked domain was enough to break all 999 tokens at once.
+* **Zero royalty, permanently.** `royaltyInfo` is a hardcoded `pure` function returning
+  `(address(0), 0)`. No royalty storage, no setter, no internal escape hatch - a `pure` function
+  cannot read state, so it can never return anything else. Anyone can confirm it forever by calling
+  `royaltyInfo(1, 10000)`. EIP-2981 is still declared so marketplaces read an explicit on-chain zero
+  instead of falling back to their own configurable defaults.
+* **An `ipfs://` base URI, never a gateway domain.** The original collection died because
+  `tokenURI` pointed at `https://niulai.sbs/...` - a single centralised host - so one expired pin
+  plus one parked domain was enough to break all 999 tokens at once.
+* **`freezeMetadata()`** makes the artwork permanently unchangeable once the CIDs are stable.
+
+Compiled clean on solc 0.8.24 with no warnings; token ids stay 1-999 so holders keep the exact
+piece they own.
 
 ## Trait summary
 """

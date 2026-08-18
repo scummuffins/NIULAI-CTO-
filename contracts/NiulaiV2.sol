@@ -2,7 +2,8 @@
 pragma solidity ^0.8.24;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/common/ERC2981.sol";
+import "@openzeppelin/contracts/interfaces/IERC2981.sol";
+import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
@@ -10,18 +11,28 @@ import "@openzeppelin/contracts/utils/Strings.sol";
  * @title NiulaiV2
  * @notice Relaunch contract for the 999-piece 牛来 (NIULAI) collection on BNB Smart Chain.
  *
- * Differences from the original contract, all deliberate:
- *  - `tokenURI` is built from an ipfs:// base URI, not a single centralised gateway domain.
- *    The original pointed at https://niulai.sbs/... , so one expired pin plus one parked
- *    domain was enough to break all 999 tokens.
- *  - The royalty receiver is changeable (the original hard-coded it with no setter).
- *  - `freezeMetadata()` lets you give up baseURI control once the art is pinned and stable,
- *    so holders get a permanent guarantee it can never be swapped or rugged again.
+ * ZERO ROYALTY, PERMANENTLY.
+ * `royaltyInfo` is a hardcoded `pure` function returning `(address(0), 0)`. There is no royalty
+ * storage, no setter, and no owner-only escape hatch anywhere in this contract - not even an
+ * internal one. Because the function is `pure` it cannot read state, so it can never return
+ * anything else for any token at any price, and no future transaction can alter that. Verify it
+ * yourself after deployment by calling `royaltyInfo(1, 10000)` on BscScan.
+ *
+ * The contract still declares EIP-2981 support deliberately. Marketplaces that query it read an
+ * explicit on-chain zero; a contract that omitted EIP-2981 entirely would leave them falling back
+ * to their own configurable defaults instead.
+ *
+ * Other differences from the original contract, all deliberate:
+ *  - `tokenURI` is built from an ipfs:// base URI, not a single centralised gateway domain. The
+ *    original pointed at https://niulai.sbs/... , so one expired pin plus one parked domain was
+ *    enough to break all 999 tokens at once.
+ *  - `freezeMetadata()` lets the owner permanently give up the ability to change the artwork once
+ *    it is pinned and stable.
  *
  * Token ids are 1..999 and `tokenURI(id)` resolves to `<baseURI><id>.json`, matching the
  * recovered metadata layout in ../metadata_rehost/.
  */
-contract NiulaiV2 is ERC721, ERC2981, Ownable {
+contract NiulaiV2 is ERC721, IERC2981, Ownable {
     using Strings for uint256;
 
     uint256 public constant MAX_SUPPLY = 999;
@@ -34,16 +45,24 @@ contract NiulaiV2 is ERC721, ERC2981, Ownable {
     event MetadataFrozen();
 
     /**
-     * @param baseURI_        e.g. "ipfs://bafy.../"  — MUST include the trailing slash
-     * @param royaltyReceiver address that receives secondary royalties
-     * @param royaltyBps      royalty in basis points (1000 = 10%, matching the original)
+     * @param baseURI_ e.g. "ipfs://bafy.../" - MUST include the trailing slash.
+     *                 There are no royalty parameters: the royalty is fixed at zero in code.
      */
-    constructor(string memory baseURI_, address royaltyReceiver, uint96 royaltyBps)
+    constructor(string memory baseURI_)
         ERC721(unicode"牛来 NFT", "NIULAI")
         Ownable(msg.sender)
     {
         _base = baseURI_;
-        _setDefaultRoyalty(royaltyReceiver, royaltyBps);
+    }
+
+    // ------------------------------------------------------------------ royalties
+
+    /**
+     * @notice Always zero. Hardcoded and `pure` - it reads no state and there is no setter,
+     *         so this return value is fixed for the life of the contract.
+     */
+    function royaltyInfo(uint256, uint256) external pure override returns (address, uint256) {
+        return (address(0), 0);
     }
 
     // ------------------------------------------------------------------ metadata
@@ -70,12 +89,6 @@ contract NiulaiV2 is ERC721, ERC2981, Ownable {
         emit MetadataFrozen();
     }
 
-    // ------------------------------------------------------------------ royalties
-
-    function setDefaultRoyalty(address receiver, uint96 feeBps) external onlyOwner {
-        _setDefaultRoyalty(receiver, feeBps);
-    }
-
     // ------------------------------------------------------------------ distribution
 
     /**
@@ -100,8 +113,8 @@ contract NiulaiV2 is ERC721, ERC2981, Ownable {
     // ------------------------------------------------------------------ plumbing
 
     function supportsInterface(bytes4 interfaceId)
-        public view override(ERC721, ERC2981) returns (bool)
+        public view override(ERC721, IERC165) returns (bool)
     {
-        return super.supportsInterface(interfaceId);
+        return interfaceId == type(IERC2981).interfaceId || super.supportsInterface(interfaceId);
     }
 }
