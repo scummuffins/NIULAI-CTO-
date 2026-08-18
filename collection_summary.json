@@ -1,0 +1,32 @@
+{
+  "collection": "牛来 NFT (NIULAI)",
+  "contract": "0x5fd0d8fecf408f61080cea470249026d3e02fb3d",
+  "chain": "BNB Smart Chain (56)",
+  "total_supply": 999,
+  "original_metadata_cid": "bafybeibmduyrrt4y7i5kwthdg4xcdvoyytekzubc3qvxistsh5yclyycfu",
+  "original_image_cid": "bafybeiaxbf5pzat7tyitaaodoombb5vrrg5iipbwgbppfz36ncutilxp4y",
+  "metadata_recovered": 999,
+  "from_ipfs_original": 849,
+  "from_okx_reconstructed": 150,
+  "images_recovered": 999,
+  "image_dimensions": {
+    "1024x1024": 999
+  },
+  "images_missing": [],
+  "metadata_missing": [],
+  "trait_types": [
+    "稀有度",
+    "角色",
+    "姿势",
+    "五官",
+    "贴图",
+    "衣服",
+    "配饰",
+    "背景",
+    "特效",
+    "见证者",
+    "画质"
+  ],
+  "cross_check_overlap": 849,
+  "cross_check_mismatches": {}
+}

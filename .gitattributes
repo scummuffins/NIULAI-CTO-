@@ -1,0 +1,3 @@
+# Preserve exact bytes everywhere: this repo is an archival record and
+# MANIFEST.csv hashes must verify on every platform after clone.
+* -text
