@@ -29,8 +29,8 @@ all {s['images_recovered']} images, the full trait and rarity tables, a current 
 
 | Path | Contents |
 |---|---|
-| `metadata/` | {s['metadata_recovered']}/999 token JSONs in the **original schema**, `1.json` - `999.json`. `image` still points at the original (dead) URL, so this is the faithful archival record. |
-| `metadata_rehost/` | Same data with `image` set to `ipfs://__IMAGE_CID__/0001.png`, ready to stamp with a real CID. |
+| `metadata/` | **Archive - do not deploy.** {s['metadata_recovered']}/999 token JSONs in the original schema, `1.json` - `999.json`, with `image` and `external_url` left pointing at the dead `niulai.sbs` URLs. This is the faithful record of what the collection was. |
+| `metadata_rehost/` | **Deploy this one.** Identical traits, with `image` set to `ipfs://__IMAGE_CID__/0001.png` ready to stamp, and `external_url` removed - see below. |
 | `images_webp/` | {s['images_recovered']}/999 images exactly as recovered, `0001.webp` - `0999.webp`. |
 | `raw_ipfs_metadata/` | Untouched bytes of every JSON pulled directly from the original IPFS CID. |
 | `contracts/NiulaiV2.sol` | Relaunch contract for BNB Smart Chain (see `RELAUNCH.md`). |
@@ -46,6 +46,21 @@ all {s['images_recovered']} images, the full trait and rarity tables, a current 
 
 ```bash
 python scripts/webp_to_png.py
+```
+
+### Why `external_url` was dropped from the deploy copy
+
+Every original token carried `"external_url": "https://niulai.sbs/token/<id>"`. That domain is
+registered to a third party through 2027-08-16 and currently parked, and marketplaces render
+`external_url` as the item's clickable website link. Shipping it would point all 999 holders at a
+domain someone else can repoint at any time, so `metadata_rehost/` omits the field entirely.
+
+`metadata/` keeps it, because that folder exists to record the collection exactly as it was.
+
+If you later have a domain you control, add it back at stamping time:
+
+```bash
+python scripts/set_image_cid.py <image-cid> --site https://yourdomain.xyz
 ```
 
 ## Where the data came from

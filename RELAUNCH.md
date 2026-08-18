@@ -56,6 +56,19 @@ That rewrites all 999 files in `metadata_rehost/` so `image` becomes
 cat metadata_rehost/368.json
 ```
 
+> **Deploy `metadata_rehost/`, never `metadata/`.** The `metadata/` folder is the archival record
+> and deliberately still points at the dead `niulai.sbs` URLs. Deploying it would rebuild the exact
+> breakage this recovery exists to undo.
+
+`metadata_rehost/` also has `external_url` removed. The original value was
+`https://niulai.sbs/token/<id>`, and that domain belongs to a third party through 2027 and is
+parked; marketplaces turn that field into the item's clickable website link, so shipping it would
+send every holder somewhere you do not control. If you have your own domain, add it back now:
+
+```bash
+python scripts/set_image_cid.py <image-cid> --site https://yourdomain.xyz
+```
+
 **Pin the metadata.** Upload `metadata_rehost/` as a directory. Note that CID too. Check that
 `<metadata-cid>/368.json` resolves and that its `image` field points at a PNG that also resolves.
 

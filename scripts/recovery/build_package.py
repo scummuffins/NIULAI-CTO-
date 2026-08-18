@@ -125,6 +125,11 @@ for t, m in final.items():
         json.dump(m, f, ensure_ascii=False, indent=2)
     rh = dict(m)
     rh["image"] = f"ipfs://__IMAGE_CID__/{t:04d}.png"
+    # Drop external_url: it points at niulai.sbs, which is registered to a third party and
+    # parked. Marketplaces render it as the item's clickable website link, so shipping it
+    # would send every holder to a domain the abandoning party can repoint at will.
+    # scripts/set_image_cid.py --site <url> puts it back once there is a domain to trust.
+    rh.pop("external_url", None)
     with open(os.path.join(PKG, "metadata_rehost", f"{t}.json"), "w", encoding="utf-8") as f:
         json.dump(rh, f, ensure_ascii=False, indent=2)
     p = os.path.join(META, f"{t}.json")
