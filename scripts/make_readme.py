@@ -48,20 +48,32 @@ all {s['images_recovered']} images, the full trait and rarity tables, a current 
 python scripts/webp_to_png.py
 ```
 
-### Why `external_url` was dropped from the deploy copy
+### How the deploy copy differs from the archive
 
-Every original token carried `"external_url": "https://niulai.sbs/token/<id>"`. That domain is
-registered to a third party through 2027-08-16 and currently parked, and marketplaces render
-`external_url` as the item's clickable website link. Shipping it would point all 999 holders at a
-domain someone else can repoint at any time, so `metadata_rehost/` omits the field entirely.
+`metadata_rehost/` is identical to `metadata/` in name, traits and trait order. Exactly three
+fields differ, all deliberately:
 
-`metadata/` keeps it, because that folder exists to record the collection exactly as it was.
+**1. `image`** - points at `ipfs://__IMAGE_CID__/<id>.png` for stamping, instead of the dead
+`niulai.sbs` URL.
 
-If you later have a domain you control, add it back at stamping time:
+**2. `external_url` - removed.** Every original token carried
+`"external_url": "https://niulai.sbs/token/<id>"`. That domain is registered to a third party
+through 2027-08-16 and currently parked, and marketplaces render `external_url` as the item's
+clickable website link - shipping it would point all 999 holders at a domain someone else can
+repoint at any time. To add one back for a domain you control:
 
 ```bash
 python scripts/set_image_cid.py <image-cid> --site https://yourdomain.xyz
 ```
+
+**3. `description` - the royalty promise is dropped.** The originals all ended with
+`，二级市场 10% 版税每小时买入 $牛来 并自动分发给持有者。` ("10% secondary royalty buys the token
+hourly and auto-distributes to holders"). The relaunch contract has a permanently zero royalty, so
+that clause would be a promise the contract cannot keep. The deploy copy ends at `共 999 枚。`
+instead; character, rarity and supply text are untouched.
+
+`metadata/` keeps all three original values, because that folder exists to record the collection
+exactly as it was.
 
 ## Where the data came from
 

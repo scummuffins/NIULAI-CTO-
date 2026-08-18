@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Cross-verify IPFS originals against OKX's cache, then build the final NIULAI package."""
-import csv, hashlib, io, json, os, shutil
+import csv, hashlib, io, json, os, re, shutil
 from collections import Counter, defaultdict
 from PIL import Image
 
@@ -14,6 +14,8 @@ META_CID = "bafybeibmduyrrt4y7i5kwthdg4xcdvoyytekzubc3qvxistsh5yclyycfu"
 IMG_CID = "bafybeiaxbf5pzat7tyitaaodoombb5vrrg5iipbwgbppfz36ncutilxp4y"
 TRAIT_ORDER = ["稀有度", "角色", "姿势", "五官", "贴图", "衣服", "配饰", "背景", "特效", "见证者", "画质"]
 IDS = list(range(1, 1000))
+# trailing "，二级市场 10% 版税每小时买入 $牛来 并自动分发给持有者。" - stripped from the deploy copy
+ROYALTY_CLAUSE = re.compile(r"，二级市场.*$")
 
 
 def load(p):
@@ -130,6 +132,10 @@ for t, m in final.items():
     # would send every holder to a domain the abandoning party can repoint at will.
     # scripts/set_image_cid.py --site <url> puts it back once there is a domain to trust.
     rh.pop("external_url", None)
+    # The relaunch contract has a permanently zero royalty, so drop the original's promise of a
+    # "10% 版税" buyback-and-distribute rather than ship a claim the contract cannot keep.
+    # Identical in all 999 originals, so one substitution covers the set.
+    rh["description"] = ROYALTY_CLAUSE.sub("。", m["description"])
     with open(os.path.join(PKG, "metadata_rehost", f"{t}.json"), "w", encoding="utf-8") as f:
         json.dump(rh, f, ensure_ascii=False, indent=2)
     p = os.path.join(META, f"{t}.json")
